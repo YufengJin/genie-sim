@@ -1,0 +1,86 @@
+services:
+  # ── GenieSim core (Isaac Sim + benchmark) ─────────────────────────────────
+  geniesim:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    image: geniesim-dev:latest
+    container_name: geniesim-full
+    restart: unless-stopped
+    tty: true
+    stdin_open: true
+    user: "1234:1234"
+
+    environment:
+      - ACCEPT_EULA=Y
+      - PRIVACY_CONSENT=Y
+      - PYTHONUNBUFFERED=1
+      - NVIDIA_VISIBLE_DEVICES=all
+      - NVIDIA_DRIVER_CAPABILITIES=all
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+      - SIM_ASSETS=/geniesim/assets
+      - DISPLAY=${DISPLAY}
+      - QT_X11_NO_MITSHM=1
+
+    network_mode: host
+    ipc: host
+    privileged: true
+
+    volumes:
+      # Project source
+      - ..:/geniesim/main:rw
+      # GenieSim assets
+      - ${SIM_ASSETS:-/tmp/sim_assets}:/geniesim/assets:ro
+      # Isaac Sim caches
+      - ~/docker/isaac-sim/cache/main:/isaac-sim/.cache:rw
+      - ~/docker/isaac-sim/cache/computecache:/isaac-sim/.nv/ComputeCache:rw
+      - ~/docker/isaac-sim/logs:/isaac-sim/.nvidia-omniverse/logs:rw
+      - ~/docker/isaac-sim/config:/isaac-sim/.nvidia-omniverse/config:rw
+      - ~/docker/isaac-sim/data:/isaac-sim/.local/share/ov/data:rw
+      - ~/docker/isaac-sim/pkg:/isaac-sim/.local/share/ov/pkg:rw
+      # Input devices
+      - /dev/input:/dev/input:rw
+      # X11
+      - /tmp/.X11-unix:/tmp/.X11-unix:rw
+      - ${HOME}/.Xauthority:/root/.Xauthority:rw
+      # Claude Code config
+      - ~/.claude:/root/.claude:ro
+      - ~/.claude.json:/root/.claude.json:rw
+
+    command: tail -f /dev/null
+
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu, compute, utility]
+
+    ulimits:
+      nofile: { soft: 65536, hard: 65536 }
+      nproc: 65536
+      memlock: -1
+      stack: 67108864
+
+  # ── Generator Server (LLM scene generation, FastMCP) ──────────────────────
+  generator-server:
+    build:
+      context: ../source/geniesim/generator/server
+      dockerfile: dockerfile
+    image: geniesim-generator-server:latest
+    container_name: geniesim-generator
+    restart: unless-stopped
+    tty: true
+
+    environment:
+      - PYTHONDONTWRITEBYTECODE=1
+      - PYTHONUNBUFFERED=1
+
+    ports:
+      - "8765:8765"
+
+    volumes:
+      - ../source/geniesim/generator/server:/app:rw
+
+    command: ["mcpo", "--config", "mcp_config.json", "--port", "8765"]
