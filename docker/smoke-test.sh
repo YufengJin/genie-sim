@@ -72,13 +72,13 @@ sleep 10
 CONTAINER="geniesim-headless"
 
 echo "Running checks:"
-run_check "Isaac Sim Python"       "$CONTAINER" "/isaac-sim/python.sh -c 'import omni.isaac.core'"
+run_check "Isaac Sim Python"       "$CONTAINER" "/isaac-sim/python.sh -c 'import isaacsim'"
 run_check "GenieSim package"       "$CONTAINER" "/isaac-sim/python.sh -c 'import geniesim'"
 run_check "ROS 2 Jazzy"            "$CONTAINER" "source /opt/ros/jazzy/setup.bash && ros2 --help"
 run_check "Generator venv"         "$CONTAINER" "/geniesim/generator_env/bin/python -c 'import networkx'"
 run_check "Record venv"            "$CONTAINER" "/geniesim/record_env/bin/python -c 'import rosbags'"
-run_check "Teleop venv"            "$CONTAINER" "/geniesim/teleop_env/bin/python -c 'import pynput'"
-run_check "Claude Code CLI"        "$CONTAINER" "claude --version"
+run_check "Teleop venv"            "$CONTAINER" "/geniesim/teleop_env/bin/python -c 'import scipy'"
+run_check "Claude Code CLI"        "$CONTAINER" "\${HOME}/.local/bin/claude --version"
 
 echo "Stopping geniesim-dev..."
 docker compose -f docker/docker-compose.headless.yaml down --timeout 5 2>/dev/null
@@ -95,9 +95,9 @@ sleep 10
 CONTAINER="geniesim-data-collection"
 
 echo "Running checks:"
-run_check "CUDA 12.8 toolkit"      "$CONTAINER" "nvcc --version" "12.8"
+run_check "CUDA 12.8 toolkit"      "$CONTAINER" "/usr/local/cuda-12.8/bin/nvcc --version" "12.8"
 run_check "cuRobo import"          "$CONTAINER" "/isaac-sim/python.sh -c 'import curobo'"
-run_check "DC deps (grpcio, h5py)" "$CONTAINER" "/isaac-sim/python.sh -c 'import grpcio; import h5py'"
+run_check "DC deps (grpc, h5py)"   "$CONTAINER" "/isaac-sim/python.sh -c 'import grpc; import h5py'"
 
 # ── Summary ──────────────────────────────────────────────────────────────────
 echo ""
