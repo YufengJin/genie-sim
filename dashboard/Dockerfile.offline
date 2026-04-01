@@ -1,0 +1,15 @@
+# Offline replay layer on top of the dashboard image.
+# Pre-installs ffmpeg + lerobot + av so container starts instantly.
+#
+# Build:
+#   docker build -f dashboard/Dockerfile.offline -t geniesim-dashboard-offline:latest .
+#
+FROM geniesim-dashboard:latest
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    ffmpeg libavcodec-dev libavformat-dev libswscale-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+RUN uv pip install --system --break-system-packages --no-cache \
+    av \
+    "lerobot @ git+https://github.com/huggingface/lerobot@0cf864870cf29f4738d3ade893e6fd13fbd7cdb5"

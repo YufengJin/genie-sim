@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!-- CycloneDDS configuration for Genie Sim cross-container communication.
+     Problem: CycloneDDS defaults to shared-memory (Iceoryx) transport on the same host.
+     Docker containers have separate IPC namespaces, so shared /dev/shm is inaccessible,
+     causing large messages (camera images) to silently fail between containers.
+     Solution: Disable shared memory — CycloneDDS falls back to UDP loopback, which works
+     across all containers that share --network=host.
+     Reference: others/role-ros2/docker uses FastDDS+FASTDDS_BUILTIN_TRANSPORTS=UDPv4
+     for the same reason. -->
+<CycloneDDS xmlns="https://cdds.io/config"
+            xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+            xsi:schemaLocation="https://cdds.io/config https://cyclonedds.io/schema/cyclone_dds_config.xsd">
+  <Domain id="any">
+    <SharedMemory>
+      <Enable>false</Enable>
+    </SharedMemory>
+  </Domain>
+</CycloneDDS>

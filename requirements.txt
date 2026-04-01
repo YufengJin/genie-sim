@@ -6,6 +6,8 @@ msgpack
 open3d
 openai
 pyyaml
+rerun-sdk
 ruckig
 shapely
 trimesh
+numpy<2.0

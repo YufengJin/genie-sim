@@ -37,6 +37,7 @@ echo "export ROS_VERSION=2" >>~/.bashrc
 echo "export ROS_PYTHON_VERSION=3" >>~/.bashrc
 echo "export ROS_LOCALHOST_ONLY=1" >>~/.bashrc
 echo "export RMW_IMPLEMENTATION=rmw_cyclonedds_cpp" >>~/.bashrc
+echo "export CYCLONEDDS_URI=/geniesim/main/config/cyclonedds.xml" >>~/.bashrc
 echo "export LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:${ISAACSIM_HOME}/exts/isaacsim.ros2.bridge/${ROS_DISTRO}/lib" >>~/.bashrc
 echo "export ROS_CMD_DISTRO=jazzy" >>~/.bashrc
 echo "source ${ISAACSIM_HOME}/setup_ros_env.sh" >>~/.bashrc

@@ -122,7 +122,8 @@ RUN conda run -n difix pip3 install matplotlib scikit-learn plyfile rich && rm -
 
 FROM difix-builder as gsplat-builder
 # base install gsplat
-RUN conda run -n base python3 -m pip install plyfile torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu118 \
+RUN conda run -n base python3 -m pip install plyfile \
+    && conda run -n base python3 -m pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu118 \
     && rm -rf /root/.cache/pip
 RUN cd ./third_party/gsplat && conda run -n base pip3 uninstall pycolmap && \
     conda run -n base pip3 install -r examples/requirements.txt && \

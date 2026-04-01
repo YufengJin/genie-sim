@@ -13,9 +13,10 @@ mkdir -p ~/docker/isaac-sim/data/Kit
 mkdir -p ~/docker/isaac-sim/logs
 mkdir -p ~/docker/isaac-sim/pkg
 mkdir -p $CURRENT_DIR/source/geniesim/benchmark/saved_task
-sudo chown -R 1234:1234 ~/docker/isaac-sim
+sudo chown -R 1234:1234 ~/docker/isaac-sim 
 
 xhost +local:
+docker rm -f genie_sim_benchmark 2>/dev/null || true
 docker run -itd --name genie_sim_benchmark \
     --user 1234:1234 \
     --entrypoint ./scripts/entrypoint.sh \
@@ -25,6 +26,7 @@ docker run -itd --name genie_sim_benchmark \
     -e "ACCEPT_EULA=Y" \
     -e "PRIVACY_CONSENT=Y" \
     -e DISPLAY \
+    -e CYCLONEDDS_URI=/geniesim/main/config/cyclonedds.xml \
     -v ~/docker/isaac-sim/cache/main:/isaac-sim/.cache:rw \
     -v ~/docker/isaac-sim/cache/computecache:/isaac-sim/.nv/ComputeCache:rw \
     -v ~/docker/isaac-sim/logs:/isaac-sim/.nvidia-omniverse/logs:rw \

@@ -115,6 +115,9 @@ class RobotInterface(Node):
         # Pre-allocated Image messages (one per camera)
         self._img_data_cache = {}  # camera_id -> Image Data
         self._img_msg_cache = {}  # camera_id -> Image
+        self._depth_data_cache = {}  # camera_id -> depth numpy (H, W) float32
+        self._depth_msg_cache = {}  # camera_id -> Image msg
+        self.depth_publisher_map = {}  # camera_id -> Publisher
 
         # Pre-built TransformStamped lists for static & dynamic TFs
         self._static_tfs_prebuilt = []  # list[TransformStamped]
@@ -326,6 +329,17 @@ class RobotInterface(Node):
         if "Fisheye" not in camera_prim and "Top" not in camera_prim:
             self.depth_annotators[camera_id] = rep.AnnotatorRegistry.get_annotator("distance_to_image_plane")
             self.depth_annotators[camera_id].attach(rp)
+            self.depth_publisher_map[camera_id] = self.create_publisher(
+                Image, camera_param["topic_name"]["depth"], 1
+            )
+            depth_img = Image()
+            depth_img.header.frame_id = "camera_optical_frame"
+            depth_img.width = resolution[0]
+            depth_img.height = resolution[1]
+            depth_img.encoding = "32FC1"
+            depth_img.step = resolution[0] * 4
+            self._depth_msg_cache[camera_id] = depth_img
+            self._depth_data_cache[camera_id] = np.empty((resolution[1], resolution[0]), dtype=np.float32)
 
         img = Image()
         img.header.frame_id = "camera_optical_frame"
@@ -357,6 +371,9 @@ class RobotInterface(Node):
             for cam in self.publisher_map:
                 if 0 == self._current_step_index % self.parameters[cam]["every_n_frame"]:
                     self.pub_camera(cam)
+            for cam in self.depth_publisher_map:
+                if 0 == self._current_step_index % self.parameters[cam]["every_n_frame"]:
+                    self.pub_depth(cam)
 
     def prepare_data(self):
         if self._articulation is None:
@@ -395,6 +412,17 @@ class RobotInterface(Node):
                 if img is None or img.size == 0:
                     continue
                 np.copyto(self._img_data_cache[cam], img)
+
+        # depth
+        for cam in self.depth_publisher_map:
+            if 0 == self._current_step_index % self.parameters[cam]["every_n_frame"]:
+                try:
+                    depth = self.depth_annotators[cam].get_data()
+                    if depth is None or depth.size == 0:
+                        continue
+                    np.copyto(self._depth_data_cache[cam], depth.squeeze())
+                except Exception:
+                    pass
 
     def publish_transforms(self, tf_tree, broadcaster):
         transforms = []
@@ -506,6 +534,15 @@ class RobotInterface(Node):
             self.publisher_map[camera_id].publish(img)
         except Exception as e:
             print(f"[ERROR] Failed to capture image from {camera_id}: {e}")
+
+    def pub_depth(self, camera_id):
+        try:
+            img = self._depth_msg_cache[camera_id]
+            img.header.stamp = self._header.stamp
+            img.data = self._depth_data_cache[camera_id].tobytes()
+            self.depth_publisher_map[camera_id].publish(img)
+        except Exception as e:
+            print(f"[ERROR] Failed to publish depth for {camera_id}: {e}")
 
     def pub_articulated_object(self):
         for idx, articulation in enumerate(self.articulated_objs):

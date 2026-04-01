@@ -4,7 +4,7 @@
     rendering_step: 60
     enable_curobo: false
     reset_fallen: false
-    enable_ros: false
+    enable_ros: true
     record_img: false
     record_video: false
     render_mode: "RaytracedLighting"

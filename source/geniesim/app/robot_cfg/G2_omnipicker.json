@@ -5,13 +5,13 @@
       480
     ],
     "/genie/gripper_l_base_link/Left_Camera": [
-      1280,
-      1056,
+      640,
+      400,
       30
     ],
     "/genie/gripper_r_base_link/Right_Camera": [
-      1280,
-      1056,
+      640,
+      400,
       30
     ],
     "/genie/head_link3/head_front_Camera": [

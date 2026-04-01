@@ -1,0 +1,14 @@
+camera:
+  index: 0
+  width: 1280
+  height: 720
+  fps: 30
+
+tracker:
+  score_threshold: 0.5
+  mask_alpha: 0.4
+
+display:
+  window_name: "SAM3 Tracker"
+  show_fps: true
+  show_score: true

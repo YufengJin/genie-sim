@@ -48,6 +48,28 @@ QOS_PROFILE_VOLATILE = QoSProfile(
     durability=QoSDurabilityPolicy.VOLATILE,
 )
 
+# ── TF tree frames for Rerun visualization ──────────────────────────────────
+TF_TREE_FRAMES = [
+    "body_link1", "body_link2", "body_link3", "body_link4", "body_link5",
+    "arm_base_link",
+    "arm_l_link3", "arm_l_link7", "arm_l_end_link",
+    "arm_r_link3", "arm_r_link7", "arm_r_end_link",
+    "head_link1", "head_link2", "head_link3",
+]
+
+TF_TREE_EDGES = [
+    ("base_link", "body_link1"),
+    ("body_link1", "body_link2"), ("body_link2", "body_link3"),
+    ("body_link3", "body_link4"), ("body_link4", "body_link5"),
+    ("body_link5", "arm_base_link"),
+    ("arm_base_link", "arm_l_link3"), ("arm_l_link3", "arm_l_link7"),
+    ("arm_l_link7", "arm_l_end_link"),
+    ("arm_base_link", "arm_r_link3"), ("arm_r_link3", "arm_r_link7"),
+    ("arm_r_link7", "arm_r_end_link"),
+    ("body_link5", "head_link1"), ("head_link1", "head_link2"),
+    ("head_link2", "head_link3"),
+]
+
 
 def distance_error(xyz1, xyz2):
     return math.sqrt((xyz1[0] - xyz2[0]) ** 2 + (xyz1[1] - xyz2[1]) ** 2 + (xyz1[2] - xyz2[2]) ** 2)
@@ -486,6 +508,120 @@ class SimNode(Node):
         new_pos = T_arm_ee_new[:3, 3]
         new_quat = R.from_matrix(T_arm_ee_new[:3, :3]).as_quat()  # [x,y,z,w]
         print(f"id:{id} new_pos:{new_pos} new_quat:{new_quat}")
+
+        pose = Pose()
+        pose.position.x = new_pos[0]
+        pose.position.y = new_pos[1]
+        pose.position.z = new_pos[2]
+        pose.orientation.x = new_quat[0]
+        pose.orientation.y = new_quat[1]
+        pose.orientation.z = new_quat[2]
+        pose.orientation.w = new_quat[3]
+        return pose
+
+    def get_ee_pose_nonblocking(self, side="left"):
+        """Non-blocking TF lookup for EE pose in base_link frame.
+
+        Tries to refresh TF cache; falls back to cached pose on failure.
+
+        Returns:
+            (pos_list, quat_list) or (None, None) if no cached pose exists.
+        """
+        idx = 0 if side == "left" else 1
+        try:
+            transform = self.tf_buffer.lookup_transform(
+                self.parts[idx]["frame_id"],
+                self.parts[idx]["target_frame_name"],
+                rclpy.time.Time(),
+            )
+            self.parts[idx]["pose"] = self.transform_to_pose_ros(transform)
+            self.parts[idx]["init"] = True
+        except Exception:
+            pass  # use cached pose
+
+        if not self.parts[idx]["init"]:
+            return None, None
+        pose = self.parts[idx]["pose"]
+        pos = [pose.position.x, pose.position.y, pose.position.z]
+        quat = [
+            pose.orientation.x,
+            pose.orientation.y,
+            pose.orientation.z,
+            pose.orientation.w,
+        ]
+        return pos, quat
+
+    def get_all_tf_frames(self):
+        """Batch lookup all TF_TREE_FRAMES relative to base_link.
+
+        Returns:
+            dict mapping frame_name -> (pos_list, quat_xyzw_list) or None on failure.
+        """
+        result = {}
+        for frame in TF_TREE_FRAMES:
+            try:
+                transform = self.tf_buffer.lookup_transform(
+                    "base_link", frame, rclpy.time.Time()
+                )
+                t = transform.transform.translation
+                q = transform.transform.rotation
+                result[frame] = (
+                    [t.x, t.y, t.z],
+                    [q.x, q.y, q.z, q.w],
+                )
+            except Exception:
+                result[frame] = None
+        return result
+
+    def compute_target_pose(self, target_pos, target_quat, side="left"):
+        """Convert target pose from base_link frame to arm_base_link frame.
+
+        Args:
+            target_pos: [x, y, z] in base_link frame.
+            target_quat: [qx, qy, qz, qw] in base_link frame.
+            side: "left" or "right".
+
+        Returns:
+            geometry_msgs.msg.Pose in arm_base_link frame, or None.
+        """
+        # Refresh arm_base TF (non-blocking)
+        try:
+            transform = self.tf_buffer.lookup_transform(
+                self.parts[2]["frame_id"],
+                self.parts[2]["target_frame_name"],
+                rclpy.time.Time(),
+            )
+            self.parts[2]["pose"] = self.transform_to_pose_ros(transform)
+            self.parts[2]["init"] = True
+        except Exception:
+            pass
+
+        arm_part = self.parts[2]  # arm_base
+        if not arm_part["init"]:
+            return None
+        arm_base_pos = [
+            arm_part["pose"].position.x,
+            arm_part["pose"].position.y,
+            arm_part["pose"].position.z,
+        ]
+        arm_base_xyzw = [
+            arm_part["pose"].orientation.x,
+            arm_part["pose"].orientation.y,
+            arm_part["pose"].orientation.z,
+            arm_part["pose"].orientation.w,
+        ]
+
+        T_base_arm = np.eye(4)
+        T_base_arm[:3, 3] = arm_base_pos
+        T_base_arm[:3, :3] = R.from_quat(arm_base_xyzw).as_matrix()
+
+        T_base_ee = np.eye(4)
+        T_base_ee[:3, 3] = target_pos
+        T_base_ee[:3, :3] = R.from_quat(target_quat).as_matrix()
+
+        T_arm_ee = np.linalg.inv(T_base_arm) @ T_base_ee
+        new_pos = T_arm_ee[:3, 3]
+        new_quat = R.from_matrix(T_arm_ee[:3, :3]).as_quat()
 
         pose = Pose()
         pose.position.x = new_pos[0]

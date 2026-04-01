@@ -7,8 +7,8 @@ app:
   enable_curobo: false
   reset_fallen: false
   enable_ros: *enable_ros
-  record_img: true
-  record_video: true
+  record_img: false
+  record_video: false
   render_mode: "RaytracedLighting"
   disable_physics: false
   data_convert: false
@@ -21,8 +21,8 @@ benchmark:
   num_episode: 1
   policy_class: "DemoPolicy"
   env_class: "DummyEnv"
-  task_name: "home_g2"
-  sub_task_name: "open_door"
+  task_name: "market_01_g2"
+  sub_task_name: "take_wrong_item_shelf"
   output_dir: "output"
   fps: 30
   record: false

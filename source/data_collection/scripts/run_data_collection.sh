@@ -59,16 +59,24 @@ while [[ $# -gt 0 ]]; do
     esac
 done
 
-# Check if SIM_ASSETS is set
-if [ -z "$SIM_ASSETS" ]; then
-    echo "Error: SIM_ASSETS environment variable is not set"
-    echo "Please set it, e.g., export SIM_ASSETS=~/assets"
-    exit 1
-fi
-
 # Get current directory
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 CURRENT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
+
+# Check if SIM_ASSETS is set, auto-detect if not
+if [ -z "$SIM_ASSETS" ]; then
+    # Auto-detect from project root: data_collection is at source/data_collection
+    _PROJECT_ROOT="$(cd "$CURRENT_DIR/../.." && pwd)"
+    _AUTO_ASSETS="${_PROJECT_ROOT}/source/geniesim/assets"
+    if [ -d "$_AUTO_ASSETS" ]; then
+        export SIM_ASSETS="$_AUTO_ASSETS"
+        echo "Auto-detected SIM_ASSETS=$SIM_ASSETS"
+    else
+        echo "Error: SIM_ASSETS environment variable is not set"
+        echo "Please set it, e.g., export SIM_ASSETS=~/assets"
+        exit 1
+    fi
+fi
 
 sudo setfacl -m u:1234:rwX $CURRENT_DIR/scripts
 sudo mkdir -p $CURRENT_DIR/saved_task && sudo setfacl -m u:1234:rwX -R $CURRENT_DIR/saved_task
@@ -202,6 +210,7 @@ CONTAINER_ID=$(docker run -d --name $CONTAINER_NAME \
     -v ~/docker/isaac-sim/data:/isaac-sim/.local/share/ov/data:rw \
     -v ~/docker/isaac-sim/pkg:/isaac-sim/.local/share/ov/pkg:rw \
     -v /dev/input:/dev/input:rw \
+    -v /tmp/_structures.py:/isaac-sim/exts/omni.isaac.ml_archive/pip_prebundle/torch/_vendor/packaging/_structures.py:ro \
     -v $SIM_ASSETS:/geniesim/main/source/geniesim/assets:rw \
     -v $CURRENT_DIR:/geniesim/main/data_collection:rw \
     -v $LOG_DIR:/geniesim/main/data_collection/logs/${TASK_NAME}:rw \

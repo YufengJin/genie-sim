@@ -40,8 +40,16 @@ if [ "$ACTION" == "run" ]; then
 
     echo "using SIM_REPO_ROOT='$CURRENT_DIR'"
     if [ -z "$SIM_ASSETS" ]; then
-        echo "You need to set \$SIM_ASSETS eg. SIM_ASSETS=~/assets"
-        exit 1
+        # Auto-detect from project root: data_collection is at source/data_collection
+        _PROJECT_ROOT="$(cd "$CURRENT_DIR/../.." && pwd)"
+        _AUTO_ASSETS="${_PROJECT_ROOT}/source/geniesim/assets"
+        if [ -d "$_AUTO_ASSETS" ]; then
+            export SIM_ASSETS="$_AUTO_ASSETS"
+            echo "Auto-detected SIM_ASSETS=$SIM_ASSETS"
+        else
+            echo "You need to set \$SIM_ASSETS eg. SIM_ASSETS=~/assets"
+            exit 1
+        fi
     else
         echo "using SIM_ASSETS='$SIM_ASSETS'"
     fi

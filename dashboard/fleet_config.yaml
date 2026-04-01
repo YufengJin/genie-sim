@@ -1,0 +1,61 @@
+# Fleet configuration for offline replay mode
+# Each robot maps to a LeRobot dataset on disk.
+# Switching robots in the UI switches the replayed dataset.
+#
+# Dataset host path: /mnt/hdd18T/datasets/AgiBotWorld/Reasoning2Action-Sim/
+# Mounted in container at: /datasets/
+
+fps: 10           # Playback frame rate
+max_episodes: 20  # Max episodes per robot (0 = all). Per-robot override supported.
+
+# Default camera mapping — AgiBotWorld / ACoT-VLA format
+# Keys must match DASHBOARD_CONFIG["cameras"] in config.py
+default_camera_mapping:
+  head_front_camera: "observation.images.top_head"
+  left_camera: "observation.images.hand_left"
+  right_camera: "observation.images.hand_right"
+
+robots:
+  # sorting_packages (3 robots)
+  robot_00:
+    repo_id: "/datasets/sorting_packages_part_1"
+    task_name: "sorting_packages"
+  robot_01:
+    repo_id: "/datasets/sorting_packages_part_1"
+    task_name: "sorting_packages"
+  robot_02:
+    repo_id: "/datasets/sorting_packages_part_1"
+    task_name: "sorting_packages"
+
+  # stock_and_straighten_shelf (3 robots)
+  robot_03:
+    repo_id: "/datasets/stock_and_straighten_shelf"
+    task_name: "stock_and_straighten_shelf"
+  robot_04:
+    repo_id: "/datasets/stock_and_straighten_shelf"
+    task_name: "stock_and_straighten_shelf"
+  robot_05:
+    repo_id: "/datasets/stock_and_straighten_shelf"
+    task_name: "stock_and_straighten_shelf"
+
+  # take_wrong_item_shelf (3 robots)
+  robot_06:
+    repo_id: "/datasets/take_wrong_item_shelf"
+    task_name: "take_wrong_item_shelf"
+  robot_07:
+    repo_id: "/datasets/take_wrong_item_shelf"
+    task_name: "take_wrong_item_shelf"
+  robot_08:
+    repo_id: "/datasets/take_wrong_item_shelf"
+    task_name: "take_wrong_item_shelf"
+
+  # pour_workpiece (3 robots)
+  robot_09:
+    repo_id: "/datasets/pour_workpiece"
+    task_name: "pour_workpiece"
+  robot_10:
+    repo_id: "/datasets/pour_workpiece"
+    task_name: "pour_workpiece"
+  robot_11:
+    repo_id: "/datasets/pour_workpiece"
+    task_name: "pour_workpiece"

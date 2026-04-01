@@ -1,0 +1,25 @@
+# dashboard
+fastapi>=0.135.2
+rerun-sdk>=0.21.0
+uvicorn[standard]>=0.42.0
+PyTurboJPEG>=1.7.0,<2.0.0
+Pillow>=9.0.0
+numpy>=1.24.0
+
+# chaser-brain-openai
+openai>=2.30.0
+pydantic>=2.12.5
+python-dotenv>=1.2.2
+requests>=2.33.1
+
+# sam3 (torch/torchvision installed separately with CUDA index in Dockerfile)
+sam3 @ git+https://github.com/facebookresearch/sam3.git
+opencv-python>=4.9
+pyyaml
+huggingface-hub
+einops>=0.8.2
+pycocotools>=2.0.11
+psutil>=7.2.2
+
+# yolo-world (torch/torchvision installed separately with CUDA index in Dockerfile)
+ultralytics>=8.4.32

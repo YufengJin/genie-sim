@@ -1,0 +1,14 @@
+# Development image with Claude Code
+# Build: docker build -f ./scripts/dockerfile.dev -t genie-sim-dev:latest .
+
+FROM registry.agibot.com/genie-sim/open_source:latest
+
+USER root
+
+# Install Node.js 22 LTS for Claude Code
+RUN curl -fsSL https://deb.nodesource.com/setup_22.x | bash - \
+    && apt-get install -y nodejs \
+    && npm install -g @anthropic-ai/claude-code
+
+USER 1234:1234
+CMD ["bash"]

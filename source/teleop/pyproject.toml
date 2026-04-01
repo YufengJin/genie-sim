@@ -1,0 +1,16 @@
+[project]
+name = "genie-sim-teleop"
+version = "0.1.0"
+description = "Genie Sim teleoperation - Meta Quest bridge and VR device support"
+requires-python = ">=3.11"
+dependencies = [
+    "oculus-reader @ git+https://github.com/rail-berkeley/oculus_reader.git",
+    "numpy<2.0",
+    "scipy",
+    "open3d",
+    "rerun-sdk>=0.21",
+    "colorama",
+]
+
+[project.scripts]
+quest-bridge = "utils.quest_bridge:main"

@@ -18,7 +18,7 @@ benchmark:
   num_episode: 1
   policy_class: "DemoPolicy"
   env_class: "DummyEnv"
-  task_name: "gm_task_pickplace"
+  task_name: "home_00_g2"
   output_dir: "output"
   fps: 30
   record: false

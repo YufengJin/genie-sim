@@ -1384,7 +1384,8 @@ class APICore:
         if self.ros_node_initialized:
             rclpy.spin_once(self.server_ros_node, timeout_sec=0)
             rclpy.spin_once(self.robot_interface, timeout_sec=0)
-            rclpy.spin_once(self.benchmark_ros_node, timeout_sec=0)
+            if self.benchmark_ros_node is not None:
+                rclpy.spin_once(self.benchmark_ros_node, timeout_sec=0)
 
             # main sim clock source here
             self.robot_interface.tick(

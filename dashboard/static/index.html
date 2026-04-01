@@ -1,0 +1,1852 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Chaser Robotics Dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+/* ═══════════════════════════════════════════════════════════════
+   CSS Variables
+   ═══════════════════════════════════════════════════════════════ */
+:root {
+  --font: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --mono: 'JetBrains Mono', 'Fira Code', monospace;
+
+  --bg-root: #0f1117;
+  --bg-surface: #181a20;
+  --bg-card: #1e2028;
+  --bg-inset: #252830;
+  --bg-hover: #2a2d38;
+  --bg-input: #1a1c24;
+
+  --border: #2a2d38;
+  --border-light: #33363f;
+
+  --text: #e4e5e8;
+  --text-secondary: #9ca0ab;
+  --text-muted: #6b6f7b;
+  --text-light: #c0c3ca;
+
+  --accent: #378ADD;
+  --green: #1D9E75;
+  --red: #E24B4A;
+  --orange: #D85A30;
+  --purple: #7F77DD;
+  --yellow: #EF9F27;
+  --blue: #378ADD;
+
+  --perception: #378ADD;
+  --planner: #1D9E75;
+  --uncertainty-c: #E24B4A;
+  --recovery: #D85A30;
+  --learning: #7F77DD;
+  --scene-builder: #888780;
+  --brain-color: #378ADD;
+
+  --tier1: #1D9E75;
+  --tier2: #EF9F27;
+  --tier3: #E24B4A;
+
+  --radius-sm: 6px;
+  --radius: 10px;
+  --radius-lg: 14px;
+
+  --shadow-sm: 0 1px 3px rgba(0,0,0,.3);
+  --shadow: 0 4px 12px rgba(0,0,0,.35);
+  --shadow-lg: 0 8px 24px rgba(0,0,0,.4);
+
+  --transition: 180ms ease;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   Reset & Base
+   ═══════════════════════════════════════════════════════════════ */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body {
+  height: 100%; width: 100%;
+  font-family: var(--font);
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--text);
+  background: var(--bg-root);
+  overflow: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border-light); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
+
+/* ═══════════════════════════════════════════════════════════════
+   App Shell
+   ═══════════════════════════════════════════════════════════════ */
+.app {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+}
+
+/* ── Header ───────────────────────────────────────────────────── */
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 46px;
+  padding: 0 20px;
+  background: var(--bg-surface);
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+  z-index: 100;
+}
+
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.brand-icon {
+  width: 28px; height: 28px;
+  border-radius: var(--radius-sm);
+  background: linear-gradient(135deg, var(--accent), #2a6ebb);
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+
+.brand-icon svg { width: 18px; height: 18px; }
+
+.brand-name {
+  font-weight: 700;
+  font-size: 15px;
+  letter-spacing: .5px;
+  color: var(--text);
+}
+
+.brand-sub {
+  font-size: 12px;
+  color: var(--text-muted);
+  font-weight: 400;
+  margin-left: 2px;
+}
+
+.header-center {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.stat-pill {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 12px;
+  background: var(--bg-inset);
+  border-radius: 20px;
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.stat-pill .val {
+  font-weight: 600;
+  font-family: var(--mono);
+  font-size: 12px;
+}
+
+.stat-pill .val.green { color: var(--green); }
+.stat-pill .val.accent { color: var(--accent); }
+.stat-pill .val.purple { color: var(--purple); }
+
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.conn-pill {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 500;
+  background: var(--bg-inset);
+  transition: background var(--transition);
+}
+
+.conn-dot {
+  width: 7px; height: 7px;
+  border-radius: 50%;
+  background: var(--green);
+  transition: background var(--transition);
+}
+
+.conn-dot.off { background: var(--red); }
+.conn-pill.offline { color: var(--red); }
+
+/* ── Layout Grid ──────────────────────────────────────────────── */
+.layout {
+  display: grid;
+  grid-template-columns: 260px 1fr 360px;
+  flex: 1;
+  overflow: hidden;
+  min-height: 0;
+}
+
+/* ── Left Sidebar ─────────────────────────────────────────────── */
+.sidebar {
+  background: var(--bg-surface);
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.sidebar-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 16px 12px;
+  flex-shrink: 0;
+}
+
+.sidebar-title {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: .8px;
+  color: var(--text-muted);
+}
+
+.sidebar-count {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 10px;
+  background: var(--bg-inset);
+  color: var(--text-secondary);
+  font-family: var(--mono);
+}
+
+.fleet-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0 10px 10px;
+}
+
+/* Robot Cards (generated by JS) */
+.robot-card {
+  padding: 10px 12px;
+  border-radius: var(--radius);
+  cursor: pointer;
+  transition: background var(--transition), border-color var(--transition);
+  margin-bottom: 2px;
+  border: 1px solid transparent;
+  background: transparent;
+}
+
+.robot-card:hover { background: var(--bg-hover); }
+.robot-card.selected { background: var(--bg-inset); border-color: var(--accent); }
+.robot-card.error { border-color: var(--red); }
+.robot-card.teleop { border-color: var(--yellow); }
+
+.rc-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 4px;
+}
+
+.rc-id {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.rc-status {
+  font-size: 10px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 10px;
+  text-transform: uppercase;
+  letter-spacing: .3px;
+}
+
+.rc-status.s-idle { background: var(--bg-inset); color: var(--text-muted); }
+.rc-status.s-active { background: rgba(29,158,117,.15); color: var(--green); }
+.rc-status.s-human { background: rgba(239,159,39,.15); color: var(--yellow); }
+.rc-status.s-error { background: rgba(226,75,74,.15); color: var(--red); }
+.rc-status.s-stop { background: rgba(226,75,74,.15); color: var(--red); }
+
+.rc-task {
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-bottom: 6px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.rc-bar-wrap {
+  height: 3px;
+  background: var(--bg-inset);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.rc-bar {
+  height: 100%;
+  border-radius: 2px;
+  transition: width 400ms ease, background 400ms ease;
+}
+
+/* Sidebar Metrics */
+.sidebar-section {
+  padding: 14px 16px;
+  border-top: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.sidebar-section-title {
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: .7px;
+  color: var(--text-muted);
+  margin-bottom: 10px;
+}
+
+.metric-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 4px 0;
+}
+
+.metric-label { font-size: 12px; color: var(--text-secondary); }
+.metric-val { font-size: 13px; font-weight: 600; font-family: var(--mono); }
+.metric-val.green { color: var(--green); }
+.metric-val.accent { color: var(--accent); }
+.metric-val.purple { color: var(--purple); }
+.metric-val.orange { color: var(--orange); }
+
+/* ── Main Area ────────────────────────────────────────────────── */
+.main-area {
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  overflow-x: hidden;
+  background: var(--bg-root);
+  padding: 16px 20px;
+  gap: 14px;
+}
+
+/* ── Agent Cards Grid ─────────────────────────────────────────── */
+.agents-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+.agent-card {
+  background: var(--bg-card);
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  padding: 14px 16px;
+  transition: border-color var(--transition), box-shadow var(--transition), background 300ms ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.agent-card:hover {
+  border-color: var(--border-light);
+  box-shadow: var(--shadow-sm);
+}
+
+.agent-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0;
+  width: 100%; height: 3px;
+}
+
+.agent-card[data-agent="perception"]::before { background: var(--perception); }
+.agent-card[data-agent="data_collection"]::before { background: var(--planner); }
+.agent-card[data-agent="scene_generation"]::before { background: var(--scene-builder); }
+.agent-card[data-agent="uncertainty"]::before { background: var(--uncertainty-c); }
+
+/* Active state — colored glow per panel */
+.agent-card.active[data-agent="perception"] { background: rgba(55,138,221,.12); border-color: var(--perception); box-shadow: 0 0 12px rgba(55,138,221,.2); }
+.agent-card.active[data-agent="data_collection"] { background: rgba(29,158,117,.12); border-color: var(--planner); box-shadow: 0 0 12px rgba(29,158,117,.2); }
+.agent-card.active[data-agent="scene_generation"] { background: rgba(136,135,128,.12); border-color: var(--scene-builder); box-shadow: 0 0 12px rgba(136,135,128,.2); }
+.agent-card.active[data-agent="uncertainty"] { background: rgba(226,75,74,.12); border-color: var(--uncertainty-c); box-shadow: 0 0 12px rgba(226,75,74,.2); }
+
+.agent-card.active .agent-conf { color: var(--green); }
+
+/* Panel content area inside card */
+.agent-panel-content {
+  margin-top: 10px;
+  border-top: 1px solid var(--border);
+  padding-top: 10px;
+}
+.agent-panel-content .perception-cam-wrap {
+  max-height: 200px;
+  margin-top: 8px;
+}
+.agent-panel-content .perception-cam-wrap img {
+  width: 100%;
+  max-height: 200px;
+  object-fit: contain;
+  border-radius: var(--radius-sm);
+}
+
+/* Uncertainty chart bars */
+.unc-bars { display: flex; gap: 4px; align-items: flex-end; height: 80px; margin-top: 8px; }
+.unc-bar-col { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 2px; height: 100%; justify-content: flex-end; }
+.unc-bar { width: 100%; border-radius: 2px 2px 0 0; transition: height 600ms ease, background 600ms ease; min-height: 2px; }
+.unc-bar-label { font-size: 9px; color: var(--text-muted); font-family: var(--mono); }
+
+.agent-card.flash { animation: cardFlash 600ms ease-out; }
+@keyframes cardFlash { 0% { background: rgba(127,119,221,.15); } 100% { background: var(--bg-card); } }
+
+.agent-card.alert { border-color: var(--red); border-width: 2px; }
+
+.agent-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.agent-name {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: .5px;
+}
+
+.agent-card[data-agent="perception"] .agent-name { color: var(--perception); }
+.agent-card[data-agent="planner"] .agent-name { color: var(--planner); }
+.agent-card[data-agent="uncertainty"] .agent-name { color: var(--uncertainty-c); }
+.agent-card[data-agent="recovery"] .agent-name { color: var(--recovery); }
+.agent-card[data-agent="learning"] .agent-name { color: var(--learning); }
+.agent-card[data-agent="scene_builder"] .agent-name { color: var(--scene-builder); }
+
+.agent-conf {
+  font-size: 11px;
+  font-family: var(--mono);
+  font-weight: 500;
+  padding: 2px 7px;
+  border-radius: 4px;
+  background: var(--bg-inset);
+  color: var(--text-secondary);
+}
+
+.agent-msg {
+  font-size: 12px;
+  color: var(--text-secondary);
+  line-height: 1.45;
+  max-height: 36px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+.agent-tags {
+  display: flex;
+  gap: 5px;
+  margin-top: 6px;
+  flex-wrap: wrap;
+}
+
+.agent-tag {
+  font-size: 10px;
+  padding: 1px 6px;
+  border-radius: 4px;
+  background: var(--bg-inset);
+  color: var(--text-muted);
+  font-family: var(--mono);
+}
+
+/* Uncertainty Gauge */
+.unc-gauge { margin-top: 10px; }
+
+.gauge-track {
+  width: 100%;
+  height: 6px;
+  background: var(--bg-inset);
+  border-radius: 3px;
+  overflow: hidden;
+  position: relative;
+}
+
+.gauge-fill {
+  height: 100%;
+  border-radius: 3px;
+  transition: width 600ms cubic-bezier(.4,0,.2,1), background 400ms ease;
+  position: relative;
+}
+
+.gauge-fill::after {
+  content: '';
+  position: absolute;
+  top: 0; right: 0;
+  width: 20px; height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,.2));
+  animation: gaugeShimmer 2s ease-in-out infinite;
+}
+
+@keyframes gaugeShimmer { 0%, 100% { opacity: 0; } 50% { opacity: 1; } }
+
+.gauge-labels {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 4px;
+  font-size: 10px;
+  color: var(--text-muted);
+  font-family: var(--mono);
+}
+
+.gauge-val { font-weight: 600; }
+
+/* ── Camera Section ───────────────────────────────────────────── */
+.cameras-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.cameras-title {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: .6px;
+  color: var(--text-muted);
+}
+
+.live-dot {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: var(--red);
+  animation: livePulse 1.5s ease-in-out infinite;
+}
+
+@keyframes livePulse { 0%, 100% { opacity: 1; } 50% { opacity: .35; } }
+
+.cam-robot-label {
+  font-size: 12px;
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
+.cam-robot-status {
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-left: auto;
+  font-family: var(--mono);
+}
+
+.cameras-grid {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr;
+  gap: 8px;
+}
+
+.cam-slot {
+  position: relative;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+  aspect-ratio: 16/10;
+}
+
+.cam-slot img {
+  width: 100%; height: 100%;
+  object-fit: cover;
+  display: none;
+}
+
+.cam-placeholder {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  color: var(--text-muted);
+  font-size: 11px;
+}
+
+.cam-placeholder svg { width: 28px; height: 28px; opacity: .3; }
+
+.cam-tag {
+  position: absolute;
+  top: 6px; left: 6px;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: .5px;
+  padding: 2px 8px;
+  border-radius: 4px;
+  text-transform: uppercase;
+  z-index: 2;
+}
+
+.cam-tag.head { background: rgba(55,138,221,.2); color: var(--accent); }
+.cam-tag.left { background: rgba(29,158,117,.2); color: var(--green); }
+.cam-tag.right { background: rgba(216,90,48,.2); color: var(--orange); }
+
+/* ── YOLO Controls ───────────────────────────────────────────── */
+.yolo-controls {
+  display: flex; align-items: center; gap: 10px;
+  margin-bottom: 8px; padding: 8px 12px;
+  background: var(--bg-card); border: 1px solid var(--border);
+  border-radius: var(--radius-sm); font-size: 12px;
+}
+.yolo-toggle { display: flex; align-items: center; gap: 6px; cursor: pointer; white-space: nowrap; }
+.yolo-toggle input { accent-color: var(--accent); width: 14px; height: 14px; }
+.yolo-toggle-label { color: var(--text-secondary); font-weight: 600; text-transform: uppercase; letter-spacing: .5px; font-size: 11px; }
+.yolo-sep { width: 1px; height: 18px; background: var(--border); flex-shrink: 0; }
+.yolo-class-input {
+  flex: 1; padding: 4px 8px; min-width: 120px;
+  background: var(--bg-input); border: 1px solid var(--border);
+  border-radius: var(--radius-sm); color: var(--text);
+  font-size: 11px; font-family: var(--mono);
+  outline: none; transition: border-color var(--transition);
+}
+.yolo-class-input:focus { border-color: var(--accent); }
+.yolo-conf-slider { width: 70px; accent-color: var(--accent); }
+.yolo-conf-prefix { color: var(--text-muted); font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: .3px; white-space: nowrap; }
+.yolo-conf-label { color: var(--text-muted); font-family: var(--mono); font-size: 11px; min-width: 28px; }
+.btn-sm { padding: 3px 10px; font-size: 11px; }
+
+/* ── Perception modal (head camera + YOLO) ───────────────────── */
+.perception-modal-backdrop {
+  display: none;
+  position: fixed; inset: 0; z-index: 250;
+  background: rgba(0,0,0,.65);
+  align-items: center; justify-content: center;
+  padding: 24px;
+}
+.perception-modal-backdrop.show { display: flex; }
+.perception-modal {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  max-width: 960px; width: 100%; max-height: 92vh;
+  display: flex; flex-direction: column;
+  box-shadow: var(--shadow-lg);
+}
+.perception-modal-head {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 12px 16px; border-bottom: 1px solid var(--border);
+}
+.perception-modal-body { padding: 16px; overflow: auto; }
+.perception-cam-wrap {
+  position: relative;
+  background: var(--bg-inset);
+  border-radius: var(--radius);
+  min-height: 240px;
+  display: flex; align-items: center; justify-content: center;
+}
+.perception-cam-wrap img { max-width: 100%; max-height: 70vh; display: block; }
+.perception-cam-wrap .cam-placeholder {
+  position: absolute; inset: 0;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 8px; color: var(--text-muted); font-size: 12px; pointer-events: none;
+}
+.perception-cam-wrap .cam-placeholder svg { width: 48px; height: 48px; opacity: .35; }
+.perception-log-hint { font-size: 11px; color: var(--text-muted); margin-top: 10px; font-family: var(--mono); line-height: 1.4; }
+.perception-open-btn { margin-top: 8px; width: 100%; font-size: 11px; }
+
+.agent-subwindow-panel { display: none; padding: 16px; }
+.agent-subwindow-panel.active { display: block; }
+.agent-card.agent-subwindow-active {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 1px rgba(55,138,221,.35);
+}
+.agent-subwindow-placeholder {
+  padding: 32px 24px;
+  color: var(--text-secondary);
+  font-size: 13px;
+  line-height: 1.5;
+  text-align: center;
+}
+.agents-grid .agent-card {
+  cursor: pointer;
+  transition: border-color var(--transition), box-shadow var(--transition), background var(--transition);
+}
+.agents-grid .agent-card:hover {
+  border-color: var(--border-light);
+  box-shadow: var(--shadow-sm);
+  background: var(--bg-hover);
+}
+.agents-grid .agent-card:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* ── Teleop Section ───────────────────────────────────────────── */
+.teleop-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  flex-wrap: wrap;
+}
+
+.teleop-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: .5px;
+  color: var(--text-muted);
+  transition: color 200ms;
+}
+
+.teleop-label svg { width: 14px; height: 14px; }
+
+.teleop-status {
+  font-size: 10px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 10px;
+  background: var(--bg-inset);
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: .3px;
+}
+
+.teleop-status.active {
+  background: rgba(216,90,48,.15);
+  color: var(--orange);
+}
+
+.teleop-sep { width: 1px; height: 22px; background: var(--border); flex-shrink: 0; }
+
+.teleop-btns { display: flex; gap: 5px; }
+
+.btn {
+  padding: 5px 12px;
+  border-radius: var(--radius-sm);
+  font-size: 12px;
+  font-weight: 600;
+  font-family: var(--font);
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: all var(--transition);
+  white-space: nowrap;
+}
+
+.btn:disabled { opacity: .4; cursor: not-allowed; }
+
+.btn-primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+.btn-primary:hover:not(:disabled) { background: #2d7acc; }
+
+.btn-green { background: transparent; color: var(--green); border-color: var(--green); }
+.btn-green:hover:not(:disabled) { background: rgba(29,158,117,.1); }
+
+.btn-red { background: transparent; color: var(--red); border-color: var(--red); }
+.btn-red:hover:not(:disabled) { background: rgba(226,75,74,.1); }
+
+.btn-ghost { background: transparent; color: var(--text-secondary); border-color: var(--border); }
+.btn-ghost:hover:not(:disabled) { background: var(--bg-hover); }
+
+.device-btns { display: flex; gap: 4px; }
+
+.dev-btn {
+  padding: 4px 9px;
+  border-radius: var(--radius-sm);
+  font-size: 11px;
+  font-weight: 500;
+  font-family: var(--font);
+  background: var(--bg-inset);
+  color: var(--text-muted);
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: all var(--transition);
+}
+
+.dev-btn:hover { color: var(--text); background: var(--bg-hover); }
+.dev-btn.active { color: var(--accent); border-color: var(--accent); background: rgba(55,138,221,.08); }
+
+.kb-hints {
+  display: grid;
+  grid-template-columns: repeat(4, auto auto);
+  gap: 3px 7px;
+  align-items: center;
+  padding: 7px 12px;
+  background: var(--bg-inset);
+  border-radius: var(--radius-sm);
+  margin-top: 8px;
+  width: 100%;
+}
+
+.kb-hints kbd {
+  font-family: var(--mono);
+  font-size: 10px;
+  font-weight: 500;
+  padding: 2px 5px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-light);
+  border-radius: 3px;
+  color: var(--text);
+  text-align: center;
+}
+
+.kb-hints span {
+  font-size: 10px;
+  color: var(--text-muted);
+}
+
+.joints-display {
+  font-size: 11px;
+  font-family: var(--mono);
+  color: var(--text-muted);
+  margin-left: auto;
+  white-space: nowrap;
+}
+
+/* ── Right Panel ──────────────────────────────────────────────── */
+.right-panel {
+  background: var(--bg-surface);
+  border-left: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  position: relative;
+  min-width: 0;
+}
+
+.resize-handle {
+  position: absolute;
+  left: -3px; top: 0;
+  width: 6px; height: 100%;
+  cursor: col-resize;
+  z-index: 10;
+}
+
+.resize-handle:hover { background: rgba(55,138,221,.25); }
+
+/* Tabs */
+.panel-tabs {
+  display: flex;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.panel-tab {
+  flex: 1;
+  padding: 10px 16px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: .5px;
+  color: var(--text-muted);
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid transparent;
+  cursor: pointer;
+  transition: all var(--transition);
+  font-family: var(--font);
+}
+
+.panel-tab:hover { color: var(--text-secondary); }
+.panel-tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+
+/* Tab Content */
+.tab-content {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  overflow: hidden;
+}
+
+/* ── Telemetry Content ────────────────────────────────────────── */
+.telemetry-content {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  overflow: hidden;
+}
+
+/* Pipeline Stats */
+.pipeline-section {
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.pipeline-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.pipeline-item {
+  background: var(--bg-inset);
+  border-radius: var(--radius-sm);
+  padding: 8px 10px;
+  text-align: center;
+}
+
+.pipeline-val {
+  font-size: 16px;
+  font-weight: 700;
+  font-family: var(--mono);
+  color: var(--accent);
+}
+
+.pipeline-label {
+  font-size: 10px;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+
+/* Brain Status */
+.brain-status-section {
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.brain-status-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.brain-dot {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  background: var(--accent);
+  animation: livePulse 2s ease-in-out infinite;
+}
+
+.brain-stat {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+/* Performance Chart */
+.perf-section {
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.perf-chart {
+  display: flex;
+  align-items: flex-end;
+  gap: 2px;
+  height: 56px;
+  padding: 4px 0;
+}
+
+.perf-bar {
+  flex: 1;
+  min-width: 4px;
+  border-radius: 2px 2px 0 0;
+  transition: height 300ms ease;
+  position: relative;
+}
+
+.perf-bar .tip {
+  display: none;
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 9px;
+  font-family: var(--mono);
+  color: var(--text);
+  background: var(--bg-card);
+  padding: 1px 4px;
+  border-radius: 3px;
+  white-space: nowrap;
+}
+
+.perf-bar:hover .tip { display: block; }
+
+/* Eval Scores */
+.eval-section {
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.eval-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 3px 0;
+}
+
+.eval-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  width: 32px;
+  flex-shrink: 0;
+}
+
+.eval-bar-wrap {
+  flex: 1;
+  height: 5px;
+  background: var(--bg-inset);
+  border-radius: 3px;
+  overflow: hidden;
+  position: relative;
+}
+
+.eval-bar {
+  height: 100%;
+  border-radius: 3px;
+  transition: width 400ms ease;
+}
+
+.eval-thresh {
+  position: absolute;
+  top: -2px;
+  width: 1px;
+  height: 9px;
+  background: var(--red);
+  opacity: .5;
+}
+
+.eval-val {
+  font-size: 11px;
+  font-family: var(--mono);
+  font-weight: 600;
+  width: 36px;
+  text-align: right;
+  flex-shrink: 0;
+}
+
+.eval-alert-badge {
+  font-size: 9px;
+  font-weight: 700;
+  width: 14px; height: 14px;
+  border-radius: 50%;
+  background: var(--red);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+/* Activity Log */
+.activity-section {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 100px;
+  overflow: hidden;
+}
+
+.section-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 16px;
+  flex-shrink: 0;
+}
+
+.section-label {
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: .7px;
+  color: var(--text-muted);
+}
+
+.activity-scroll {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0 12px 6px;
+}
+
+.act-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 7px;
+  padding: 4px 4px;
+  font-size: 12px;
+  line-height: 1.4;
+  border-bottom: 1px solid rgba(42,45,56,.35);
+  animation: evSlide 200ms ease-out;
+}
+
+@keyframes evSlide {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.act-time {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--text-muted);
+  flex-shrink: 0;
+  padding-top: 1px;
+}
+
+.act-dot {
+  width: 5px; height: 5px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  margin-top: 5px;
+}
+
+.act-msg { color: var(--text-secondary); min-width: 0; }
+.act-msg strong { color: var(--text); font-weight: 600; font-size: 11px; }
+
+/* ── Brain Content ────────────────────────────────────────────── */
+.brain-content {
+  display: none;
+  flex-direction: column;
+  flex: 1;
+  overflow: hidden;
+}
+
+/* Brain Feed */
+.brain-feed {
+  flex: 1;
+  overflow-y: auto;
+  padding: 10px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.brain-msg {
+  max-width: 92%;
+  padding: 10px 14px;
+  border-radius: var(--radius-lg);
+  font-size: 13px;
+  line-height: 1.55;
+  animation: msgAppear 220ms ease-out;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+}
+
+@keyframes msgAppear {
+  from { opacity: 0; transform: translateY(5px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.brain-msg.user {
+  align-self: flex-end;
+  background: var(--accent);
+  color: #fff;
+  border-bottom-right-radius: 4px;
+}
+
+.brain-msg.assistant {
+  align-self: flex-start;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  color: var(--text);
+  border-bottom-left-radius: 4px;
+}
+
+.brain-msg.assistant code {
+  background: var(--bg-inset);
+  padding: 1px 5px;
+  border-radius: 3px;
+  font-family: var(--mono);
+  font-size: 11px;
+}
+
+.brain-msg.assistant strong { color: var(--accent); }
+
+.brain-msg.tool {
+  align-self: flex-start;
+  background: rgba(127,119,221,.06);
+  border: 1px solid rgba(127,119,221,.15);
+  color: var(--purple);
+  font-size: 11px;
+  font-family: var(--mono);
+  padding: 6px 12px;
+  border-radius: var(--radius-sm);
+  max-width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.brain-msg.thinking {
+  align-self: flex-start;
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 12px;
+  padding: 6px 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.brain-msg.activity {
+  align-self: flex-start;
+  background: transparent;
+  padding: 4px 0;
+  font-size: 11px;
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  max-width: 100%;
+}
+
+.act-icon {
+  width: 5px; height: 5px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.brain-thinking-dots {
+  display: flex;
+  gap: 4px;
+}
+
+.brain-thinking-dots span {
+  width: 5px; height: 5px;
+  border-radius: 50%;
+  background: var(--text-muted);
+  animation: dotBounce .8s ease-in-out infinite;
+}
+
+.brain-thinking-dots span:nth-child(2) { animation-delay: .15s; }
+.brain-thinking-dots span:nth-child(3) { animation-delay: .3s; }
+
+@keyframes dotBounce {
+  0%, 80%, 100% { opacity: .3; transform: scale(.8); }
+  40% { opacity: 1; transform: scale(1.1); }
+}
+
+/* Brain Welcome */
+.brain-welcome {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+
+.brain-welcome-icon {
+  width: 34px; height: 34px;
+  border-radius: var(--radius-sm);
+  background: linear-gradient(135deg, var(--accent), #2a6ebb);
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+
+.brain-welcome-icon svg { width: 18px; height: 18px; }
+
+.brain-welcome-text {
+  font-size: 12px;
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+
+.brain-welcome-text strong { color: var(--text); }
+
+/* Suggestion Chips */
+.brain-chips {
+  display: flex;
+  gap: 5px;
+  padding: 5px 14px;
+  flex-wrap: wrap;
+  flex-shrink: 0;
+}
+
+.chip {
+  padding: 4px 11px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 500;
+  font-family: var(--font);
+  background: var(--bg-card);
+  color: var(--text-secondary);
+  border: 1px solid var(--border);
+  cursor: pointer;
+  transition: all var(--transition);
+  white-space: nowrap;
+}
+
+.chip:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: rgba(55,138,221,.06);
+}
+
+/* Brain Input */
+.brain-input-area {
+  padding: 8px 14px 12px;
+  flex-shrink: 0;
+}
+
+.brain-input-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 4px 4px 4px 14px;
+  transition: border-color var(--transition);
+}
+
+.brain-input-row:focus-within { border-color: var(--accent); }
+
+.brain-input {
+  flex: 1;
+  background: none;
+  border: none;
+  outline: none;
+  color: var(--text);
+  font-size: 13px;
+  font-family: var(--font);
+  padding: 6px 0;
+}
+
+.brain-input::placeholder { color: var(--text-muted); }
+
+.send-btn {
+  width: 32px; height: 32px;
+  border-radius: var(--radius-sm);
+  background: var(--accent);
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  transition: background var(--transition);
+  flex-shrink: 0;
+}
+
+.send-btn:hover { background: #2d7acc; }
+.send-btn:disabled { opacity: .4; cursor: not-allowed; }
+.send-btn svg { width: 14px; height: 14px; }
+
+/* ── Tier 3 Alert Overlay ─────────────────────────────────────── */
+.tier3-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.6);
+  z-index: 1000;
+  align-items: center;
+  justify-content: center;
+  backdrop-filter: blur(4px);
+}
+
+.tier3-overlay.show { display: flex; }
+
+.tier3-box {
+  background: var(--bg-card);
+  border: 2px solid var(--red);
+  border-radius: var(--radius-lg);
+  padding: 28px 32px;
+  max-width: 420px;
+  text-align: center;
+  box-shadow: 0 0 40px rgba(226,75,74,.25);
+  animation: alertPop 300ms cubic-bezier(.175,.885,.32,1.275);
+}
+
+@keyframes alertPop {
+  from { transform: scale(.85); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+
+.tier3-box h2 { color: var(--red); font-size: 18px; margin-bottom: 8px; }
+.tier3-box p { color: var(--text-secondary); font-size: 13px; margin-bottom: 18px; line-height: 1.5; }
+.tier3-box .btn { margin: 0 4px; }
+
+/* ── Brain Chat Enhancements ─────────────────────────────────── */
+.chip-think {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: rgba(55,138,221,.06);
+  font-weight: 600;
+}
+
+.attach-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--text-muted);
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color var(--transition);
+  flex-shrink: 0;
+}
+.attach-btn:hover { color: var(--accent); }
+.attach-btn svg { width: 16px; height: 16px; }
+
+.brain-attach-preview {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 14px;
+  background: var(--bg-inset);
+  border-radius: var(--radius-sm);
+  margin-bottom: 6px;
+}
+
+.brain-attach-thumb {
+  width: 40px; height: 40px;
+  object-fit: cover;
+  border-radius: 4px;
+  border: 1px solid var(--border);
+}
+
+.brain-attach-name {
+  font-size: 11px;
+  color: var(--text-secondary);
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.brain-attach-remove {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  font-size: 18px;
+  cursor: pointer;
+  padding: 0 4px;
+  line-height: 1;
+}
+.brain-attach-remove:hover { color: var(--red); }
+
+.brain-input-row.dragover {
+  border-color: var(--accent);
+  background: rgba(55,138,221,.06);
+}
+
+.brain-msg.user img {
+  max-width: 180px;
+  max-height: 120px;
+  border-radius: 6px;
+  margin-top: 6px;
+  display: block;
+}
+</style>
+</head>
+<body>
+
+<div class="app">
+  <!-- ═══ HEADER ═══════════════════════════════════════════════ -->
+  <header class="header">
+    <div class="header-left">
+      <div class="brand">
+        <div class="brand-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8">
+            <rect x="3" y="8" width="18" height="12" rx="3"/>
+            <circle cx="9" cy="14" r="1.5" fill="#fff" stroke="none"/>
+            <circle cx="15" cy="14" r="1.5" fill="#fff" stroke="none"/>
+            <path d="M8 8V5.5a4 4 0 0 1 8 0V8" stroke-linecap="round"/>
+          </svg>
+        </div>
+        <span class="brand-name">CHASER ROBOTICS</span>
+        <span class="brand-sub">Dashboard</span>
+      </div>
+    </div>
+    <div class="header-center">
+      <div class="stat-pill"><span>Robots</span><span class="val accent" id="stRobots">0</span></div>
+      <div class="stat-pill"><span>Success</span><span class="val green" id="stSuccess">--</span></div>
+      <div class="stat-pill"><span>Policy</span><span class="val purple" id="stPolicy">v1.0</span></div>
+      <div class="stat-pill"><span>Episodes</span><span class="val accent" id="stEpisodes">0</span></div>
+    </div>
+    <div class="header-right">
+      <button type="button" class="btn btn-sm btn-ghost" id="btnOpenPerception"
+              onclick="openAgentSubwindow('perception')" style="margin-right:10px">Perception</button>
+      <div class="conn-pill" id="connPill">
+        <span class="conn-dot" id="connDot"></span>
+        <span id="connText">Connecting</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- ═══ MAIN LAYOUT ═════════════════════════════════════════ -->
+  <div class="layout">
+
+    <!-- LEFT SIDEBAR -->
+    <aside class="sidebar">
+      <div class="sidebar-head">
+        <h2 class="sidebar-title">Fleet</h2>
+        <span class="sidebar-count" id="robotCount">0</span>
+      </div>
+      <div class="fleet-list" id="robotList"></div>
+      <div class="sidebar-section">
+        <div class="sidebar-section-title">Fleet Summary</div>
+        <div class="metric-row"><span class="metric-label">Active Robots</span><span class="metric-val green" id="mActive">0</span></div>
+        <div class="metric-row"><span class="metric-label">Total Episodes</span><span class="metric-val accent" id="mEpisodes">0</span></div>
+        <div class="metric-row"><span class="metric-label">Success Rate</span><span class="metric-val green" id="mSuccRate">--</span></div>
+        <div class="metric-row"><span class="metric-label">Policy Version</span><span class="metric-val" id="mPolicy">v1.0</span></div>
+        <div class="metric-row"><span class="metric-label">Human Takeovers</span><span class="metric-val purple" id="mTakeovers">0</span></div>
+        <div class="metric-row"><span class="metric-label">Total Failures</span><span class="metric-val orange" id="mFails">0</span></div>
+      </div>
+    </aside>
+
+    <!-- CENTER -->
+    <main class="main-area">
+      <!-- Agent Cards -->
+      <div class="agents-grid">
+        <!-- Perception -->
+        <div class="agent-card" data-agent="perception" id="agPerception" tabindex="0" role="button">
+          <div class="agent-header" onclick="togglePanel('perception')">
+            <span class="agent-name">Perception</span>
+            <span class="agent-conf" id="confPerception">OFF</span>
+          </div>
+          <div class="agent-msg" onclick="togglePanel('perception')" id="msgPerception">YOLO object detection</div>
+          <div class="agent-panel-content" id="panelPerception" style="display:none" onclick="event.stopPropagation()">
+            <div class="yolo-controls">
+              <label class="yolo-toggle">
+                <input type="checkbox" id="yoloEnabled" onchange="toggleYolo(this.checked)">
+                <span class="yolo-toggle-label">YOLO</span>
+              </label>
+              <div class="yolo-sep"></div>
+              <input type="text" id="yoloClasses" class="yolo-class-input"
+                     placeholder="cup, bottle, person..."
+                     value="milk, bottle, can, screws, tools">
+              <button type="button" class="btn btn-sm" onclick="applyYoloClasses()">Apply</button>
+              <div class="yolo-sep"></div>
+              <span class="yolo-conf-prefix">Conf</span>
+              <input type="range" id="yoloConf" min="5" max="95" value="30"
+                     class="yolo-conf-slider" oninput="updateYoloConf(this.value)">
+              <span class="yolo-conf-label" id="yoloConfLabel">0.30</span>
+            </div>
+            <div class="perception-cam-wrap">
+              <img id="camHeadPerception" alt="Head" style="display:none">
+              <div class="cam-placeholder" id="perceptionCamPlaceholder">
+                <svg viewBox="0 0 48 48" fill="none"><rect x="4" y="10" width="40" height="28" rx="4" stroke="currentColor" stroke-width="1.5"/><circle cx="24" cy="24" r="6" stroke="currentColor" stroke-width="1.5"/></svg>
+                <span>Waiting for head camera...</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Data Collection -->
+        <div class="agent-card" data-agent="data_collection" id="agDataCollection" onclick="togglePanel('data_collection')" tabindex="0" role="button">
+          <div class="agent-header">
+            <span class="agent-name">Data Collection</span>
+            <span class="agent-conf" id="confDataCollection">OFF</span>
+          </div>
+          <div class="agent-msg" id="msgDataCollection">Synthetic data pipeline</div>
+        </div>
+
+        <!-- Scene Generation -->
+        <div class="agent-card" data-agent="scene_generation" id="agSceneGeneration" onclick="togglePanel('scene_generation')" tabindex="0" role="button">
+          <div class="agent-header">
+            <span class="agent-name">Scene Generation</span>
+            <span class="agent-conf" id="confSceneGeneration">OFF</span>
+          </div>
+          <div class="agent-msg" id="msgSceneGeneration">LLM-driven scene builder</div>
+        </div>
+
+        <!-- Uncertainty -->
+        <div class="agent-card" data-agent="uncertainty" id="agUncertainty" onclick="togglePanel('uncertainty')" tabindex="0" role="button">
+          <div class="agent-header">
+            <span class="agent-name">Uncertainty</span>
+            <span class="agent-conf" id="confUncertainty">OFF</span>
+          </div>
+          <div class="agent-msg" id="msgUncertainty">Model uncertainty monitor</div>
+          <div class="agent-panel-content" id="panelUncertainty" style="display:none">
+            <div style="text-align:center;padding:12px 0">
+              <div id="uncBigNumber" style="font-size:48px;font-weight:700;font-family:var(--mono);line-height:1;color:var(--green)">0%</div>
+              <div style="font-size:11px;color:var(--text-muted);margin-top:4px">Model Uncertainty</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Camera Feeds -->
+      <div>
+        <div class="cameras-head">
+          <span class="live-dot"></span>
+          <span class="cameras-title">Camera Feeds</span>
+          <span class="cam-robot-label" id="camRobotName">-- no robot selected --</span>
+          <span class="cam-robot-status" id="camRobotStatus"></span>
+        </div>
+        <div class="cameras-grid">
+          <div class="cam-slot">
+            <img id="camHead" alt="">
+            <div class="cam-placeholder">
+              <svg viewBox="0 0 48 48" fill="none"><rect x="4" y="10" width="40" height="28" rx="4" stroke="currentColor" stroke-width="1.5"/><circle cx="24" cy="24" r="6" stroke="currentColor" stroke-width="1.5"/></svg>
+              <span>Waiting...</span>
+            </div>
+            <div class="cam-tag head">HEAD</div>
+          </div>
+          <div class="cam-slot">
+            <img id="camLeft" alt="">
+            <div class="cam-placeholder">
+              <svg viewBox="0 0 48 48" fill="none"><rect x="4" y="10" width="40" height="28" rx="4" stroke="currentColor" stroke-width="1.5"/><circle cx="24" cy="24" r="6" stroke="currentColor" stroke-width="1.5"/></svg>
+              <span>Waiting...</span>
+            </div>
+            <div class="cam-tag left">LEFT</div>
+          </div>
+          <div class="cam-slot">
+            <img id="camRight" alt="">
+            <div class="cam-placeholder">
+              <svg viewBox="0 0 48 48" fill="none"><rect x="4" y="10" width="40" height="28" rx="4" stroke="currentColor" stroke-width="1.5"/><circle cx="24" cy="24" r="6" stroke="currentColor" stroke-width="1.5"/></svg>
+              <span>Waiting...</span>
+            </div>
+            <div class="cam-tag right">RIGHT</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Teleop Controls -->
+      <div>
+        <div class="teleop-bar">
+          <div class="teleop-label">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a4 4 0 0 1 4 4v4a4 4 0 0 1-8 0V6a4 4 0 0 1 4-4z"/><path d="M4 12h16"/><path d="M12 12v10"/></svg>
+            TELEOP
+          </div>
+          <span class="teleop-status" id="teleopBadge">IDLE</span>
+          <span class="teleop-sep"></span>
+          <div class="teleop-btns">
+            <button class="btn btn-primary" id="btnTakeover" onclick="doTakeover()">Take Over</button>
+            <button class="btn btn-green" onclick="doRelease(true)">Save Demo</button>
+            <button class="btn btn-red" onclick="doRelease(false)">Discard</button>
+            <button class="btn btn-ghost" onclick="resetRobot()">Reset Home</button>
+            <button class="btn btn-red" onclick="emergencyStop()" style="font-weight:700">E-STOP</button>
+          </div>
+          <span class="teleop-sep"></span>
+          <div class="device-btns">
+            <button class="dev-btn active" id="devKb" onclick="setDev('keyboard')">Keyboard</button>
+            <button class="dev-btn" id="devJoystick" onclick="setDev('joystick')">Joystick</button>
+            <button class="dev-btn" id="devPico" onclick="setDev('pico')">Pico VR</button>
+            <button class="dev-btn" id="devMq" onclick="setDev('meta_quest3')">Quest 3</button>
+          </div>
+          <span class="joints-display" id="jointsDisp">Joints: --</span>
+        </div>
+        <!-- Keyboard hints (visible by default for keyboard mode) -->
+        <div class="kb-hints" id="hintKb">
+          <kbd>W/S</kbd><span>J0</span>
+          <kbd>A/D</kbd><span>J1</span>
+          <kbd>Q/E</kbd><span>J2</span>
+          <kbd>R/F</kbd><span>J3</span>
+          <kbd>Z/X</kbd><span>J4</span>
+          <kbd>C/V</kbd><span>J5</span>
+          <kbd>O</kbd><span>Open</span>
+          <kbd>P</kbd><span>Close</span>
+        </div>
+        <div class="kb-hints" id="hintJoystick" style="display:none">
+          <span style="grid-column:span 8;text-align:center;color:var(--text-secondary)">Connect joystick via USB. Left stick: J0-J1, Right stick: J2-J3, Triggers: J4-J5, Bumpers: Gripper</span>
+        </div>
+        <div class="kb-hints" id="hintPico" style="display:none">
+          <span style="grid-column:span 8;text-align:center;color:var(--text-secondary)">Start AIDEA Vision App on Pico. Enter this computer's IP address to connect.</span>
+        </div>
+        <div class="kb-hints" id="hintMq" style="display:none">
+          <span style="grid-column:span 8;text-align:center;color:var(--text-secondary)">Start Quest Link. Ensure Meta Quest 3 is on the same network and bridge server is running.</span>
+        </div>
+      </div>
+    </main>
+
+    <!-- RIGHT PANEL -->
+    <aside class="right-panel">
+      <div class="resize-handle"></div>
+
+      <!-- Tabs -->
+      <div class="panel-tabs">
+        <button class="panel-tab active" id="tabTelemetry" onclick="switchTab('telemetry')">Telemetry</button>
+        <button class="panel-tab" id="tabBrain" onclick="switchTab('brain')">Brain Chat</button>
+      </div>
+
+      <!-- Telemetry Tab -->
+      <div class="tab-content telemetry-content" id="telemetryContent" style="display:flex">
+
+        <!-- Pipeline Stats -->
+        <div class="pipeline-section">
+          <div class="section-label">Pipeline</div>
+          <div class="pipeline-grid">
+            <div class="pipeline-item">
+              <div class="pipeline-val" id="pipeEpisodes">0</div>
+              <div class="pipeline-label">Episodes</div>
+            </div>
+            <div class="pipeline-item">
+              <div class="pipeline-val" id="pipeTakeovers">0</div>
+              <div class="pipeline-label">Takeovers</div>
+            </div>
+            <div class="pipeline-item">
+              <div class="pipeline-val" id="pipeRetrains">0</div>
+              <div class="pipeline-label">Retrains</div>
+            </div>
+            <div class="pipeline-item">
+              <div class="pipeline-val" id="pipePolicy">v1.0</div>
+              <div class="pipeline-label">Policy</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Brain Status -->
+        <div class="brain-status-section">
+          <div class="brain-status-row">
+            <span class="brain-dot"></span>
+            <span>Brain: <strong id="stBrain">Active</strong></span>
+            <span class="brain-stat" id="brainTokens">Tokens ↑↓ 0k</span>
+          </div>
+        </div>
+
+        <!-- Performance Chart -->
+        <div class="perf-section">
+          <div class="section-label">Success Rate</div>
+          <div class="perf-chart" id="perfChart"></div>
+        </div>
+
+        <!-- Eval Scores -->
+        <div class="eval-section">
+          <div class="section-label">Evaluation</div>
+          <div id="evalScores">
+            <span style="font-size:11px;color:var(--text-muted)">No evaluation data</span>
+          </div>
+        </div>
+
+        <!-- Activity Log -->
+        <div class="activity-section">
+          <div class="section-bar">
+            <span class="section-label">Activity Log</span>
+          </div>
+          <div class="activity-scroll" id="activityList"></div>
+        </div>
+      </div>
+
+      <!-- Brain Chat Tab -->
+      <div class="tab-content brain-content" id="brainContent" style="display:none">
+        <!-- Brain Feed -->
+        <div class="brain-feed" id="brainFeed">
+          <div class="brain-welcome">
+            <div class="brain-welcome-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8">
+                <rect x="3" y="8" width="18" height="12" rx="3"/>
+                <circle cx="9" cy="14" r="1.5" fill="#fff" stroke="none"/>
+                <circle cx="15" cy="14" r="1.5" fill="#fff" stroke="none"/>
+                <path d="M8 8V5.5a4 4 0 0 1 8 0V8" stroke-linecap="round"/>
+              </svg>
+            </div>
+            <div class="brain-welcome-text"><strong>Genie Sim Brain</strong> is online. Ask about robot status, trigger scene generation, or request evaluations.</div>
+          </div>
+        </div>
+
+        <!-- Suggestion Chips -->
+        <div class="brain-chips">
+          <button class="chip chip-think" onclick="brainThink()">Think</button>
+        </div>
+
+        <!-- Brain Input -->
+        <div class="brain-input-area">
+          <div class="brain-attach-preview" id="brainAttachPreview" style="display:none">
+            <img id="brainAttachImg" class="brain-attach-thumb">
+            <span id="brainAttachName" class="brain-attach-name"></span>
+            <button class="brain-attach-remove" onclick="clearAttachment()">&times;</button>
+          </div>
+          <div class="brain-input-row" id="brainInputRow">
+            <button class="attach-btn" onclick="document.getElementById('brainFileInput').click()" title="Attach image or file">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
+            </button>
+            <input type="file" id="brainFileInput" accept="image/*,.pdf,.txt,.json,.csv,.py,.md" style="display:none">
+            <input type="text" id="brainInput" class="brain-input" placeholder="Talk to the Brain..." autocomplete="off">
+            <button class="send-btn" id="brainSendBtn" onclick="sendBrainMessage()">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 2L11 13"/><path d="M22 2L15 22L11 13L2 9L22 2Z"/></svg>
+            </button>
+          </div>
+        </div>
+      </div>
+    </aside>
+  </div>
+</div>
+
+<!-- Tier 3 Alert Overlay -->
+<div class="tier3-overlay" id="tier3Overlay">
+  <div class="tier3-box">
+    <h2>TIER 3 ALERT</h2>
+    <p id="tier3Msg">Critical uncertainty detected. Immediate intervention required.</p>
+    <button class="btn btn-primary" onclick="doTakeover(); hideTier3()">Take Over Now</button>
+    <button class="btn btn-ghost" onclick="hideTier3()">Dismiss</button>
+  </div>
+</div>
+
+<!-- Task Approval Overlay -->
+<div class="tier3-overlay" id="approvalOverlay">
+  <div class="tier3-box" style="border-color:var(--accent);box-shadow:0 0 40px rgba(55,138,221,.25)">
+    <h2 style="color:var(--accent)">TASK APPROVAL REQUIRED</h2>
+    <p id="approvalMsg">The Brain wants to execute a task on the robot.</p>
+    <div id="approvalPlan" style="text-align:left;margin:12px 0;padding:10px;background:var(--bg-inset);border-radius:8px;font-size:12px;color:var(--text-secondary);max-height:120px;overflow-y:auto"></div>
+    <button class="btn btn-green" onclick="respondApproval(true)" style="margin:0 4px">Approve</button>
+    <button class="btn btn-red" onclick="respondApproval(false)" style="margin:0 4px">Reject</button>
+  </div>
+</div>
+
+<!-- Old agent sub-window modal removed — panels are now inline in agent cards -->
+
+<script src="/static/js/dashboard.js"></script>
+<script>
+/* Utility functions not in dashboard.js */
+function resetRobot() {
+  if (!sel) return;
+  W({ action: 'reset_robot', robot_id: sel });
+  addActivity('system', 'Reset requested for ' + sel, 'orange');
+}
+
+function emergencyStop() {
+  if (!sel) return;
+  W({ action: 'emergency_stop', robot_id: sel });
+  addActivity('ESTOP', 'Emergency stop on ' + sel, 'red');
+}
+
+function hideTier3() {
+  var overlay = document.getElementById('tier3Overlay');
+  if (overlay) overlay.classList.remove('show');
+}
+
+function respondApproval(approved) {
+  W({ action: 'approval_response', approved: approved });
+  var overlay = document.getElementById('approvalOverlay');
+  if (overlay) overlay.classList.remove('show');
+  addActivity('approval', approved ? 'Task approved' : 'Task rejected', approved ? 'green' : 'red');
+}
+
+/* Enter key for brain input */
+document.getElementById('brainInput').addEventListener('keydown', function(e) {
+  if (e.key === 'Enter' && !e.shiftKey) {
+    e.preventDefault();
+    sendBrainMessage();
+  }
+});
+</script>
+</body>
+</html>

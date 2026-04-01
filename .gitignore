@@ -45,3 +45,30 @@ logs
 
 .cache/
 .cache
+
+# secrets
+.env
+*.env
+
+# Claude Code planning artifacts
+docs/superpowers/
+
+# Chinese documentation (internal only)
+docs/architecture-report.md
+docs/dds-communication-report.md
+docs/geniesim-guide.md
+docs/motion-planning-and-sensors.md
+market_demo.md
+source/teleop/CONTROLLER_ALGORITHMS.md
+
+# Private/sensitive directory
+others/
+
+# Vendor binary libraries
+source/teleop/app/vendors/lib/
+
+# Python virtual environments
+.venv/
+venv/
+
+CLAUDE.md

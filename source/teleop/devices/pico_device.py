@@ -43,6 +43,9 @@ class PicoDevice(TeleopDevice):
         self.output = {"left": None, "right": None}
         self.coef_pos = 1.0
         self.coef_rot = 1.0
+        self.vr_to_global_mat = np.eye(4)
+        self.reset_orientation = True
+        self.skip_vr_calibration = False  # Legend mode: skip VR origin calibration
 
     def initialize(self):
         self.vr_server = VRServer(host=self.host_ip, port=self.port)
@@ -89,24 +92,42 @@ class PicoDevice(TeleopDevice):
             content (list(dict)): parse pico control command to local frame
         """
         [l_sig, r_sig] = self.content
-        # print(f"r_sig:{r_sig['position']}")
         ret = {"l": {}, "r": {}}
-        ret["l"]["position"] = np.array([l_sig["position"]["z"], -l_sig["position"]["x"], l_sig["position"]["y"]])
+
+        # --- Orientation reset (Role-ROS2 style): joystick click starts,
+        #     continuously updates vr_to_global_mat, grip press locks ---
+        if not self.skip_vr_calibration and (l_sig["axisClick"] == "true" or r_sig["axisClick"] == "true"):
+            self.reset_orientation = True
+        if self.reset_orientation and not self.skip_vr_calibration:
+            ref_pos = np.array([l_sig["position"]["x"], l_sig["position"]["y"], l_sig["position"]["z"]])
+            ref_rot = R.from_quat(
+                [l_sig["rotation"]["x"], l_sig["rotation"]["y"], l_sig["rotation"]["z"], l_sig["rotation"]["w"]]
+            ).as_matrix()
+            ref_pose = np.eye(4)
+            ref_pose[:3, :3] = ref_rot
+            ref_pose[:3, 3] = ref_pos
+            self.vr_to_global_mat = np.linalg.inv(ref_pose)
+            # grip press → lock
+            if l_sig["handTrig"] > 0.8 or r_sig["handTrig"] > 0.8:
+                self.reset_orientation = False
+
+        # --- Left arm: apply 4×4 vr_to_global then axis reorder ---
+        raw_pos_l = np.array([l_sig["position"]["x"], l_sig["position"]["y"], l_sig["position"]["z"]])
         l_original_quat = np.array(
-            [
-                l_sig["rotation"]["x"],
-                l_sig["rotation"]["y"],
-                l_sig["rotation"]["z"],
-                l_sig["rotation"]["w"],
-            ]
+            [l_sig["rotation"]["x"], l_sig["rotation"]["y"], l_sig["rotation"]["z"], l_sig["rotation"]["w"]]
         )
-        l_original_rot = R.from_quat(l_original_quat)
-        l_original_matrix = l_original_rot.as_matrix()
+        l_original_rot = R.from_quat(l_original_quat).as_matrix()
+        raw_pose_l = np.eye(4)
+        raw_pose_l[:3, :3] = l_original_rot
+        raw_pose_l[:3, 3] = raw_pos_l
+        aligned_pose_l = self.vr_to_global_mat @ raw_pose_l
+        aligned_pos_l = aligned_pose_l[:3, 3]
+        aligned_rot_l = aligned_pose_l[:3, :3]
+
         l_transform_matrix = np.array([[0, 0, 1], [-1, 0, 0], [0, 1, 0]])
-        l_transform_inv = l_transform_matrix.T
-        l_new_matrix = l_transform_matrix @ l_original_matrix @ l_transform_inv
-        l_new_rot = R.from_matrix(l_new_matrix)
-        ret["l"]["quaternion"] = l_new_rot.as_quat()
+        ret["l"]["position"] = l_transform_matrix @ aligned_pos_l
+        l_new_matrix = l_transform_matrix @ aligned_rot_l @ l_transform_matrix.T
+        ret["l"]["quaternion"] = R.from_matrix(l_new_matrix).as_quat()
 
         ret["l"]["axisMode"] = "reset" if l_sig["axisClick"] == "true" else "move"
         ret["l"]["axisX"] = l_sig["axisX"]
@@ -116,30 +137,32 @@ class PicoDevice(TeleopDevice):
         ret["l"]["reset"] = l_sig["keyOne"] == "true"
         ret["l"]["against"] = l_sig["keyTwo"] == "true"
 
+        # --- Right arm: apply 4×4 vr_to_global then axis reorder ---
+        raw_pos_r = np.array([r_sig["position"]["x"], r_sig["position"]["y"], r_sig["position"]["z"]])
+        r_original_quat = np.array(
+            [r_sig["rotation"]["x"], r_sig["rotation"]["y"], r_sig["rotation"]["z"], r_sig["rotation"]["w"]]
+        )
+        r_original_rot = R.from_quat(r_original_quat).as_matrix()
+        raw_pose_r = np.eye(4)
+        raw_pose_r[:3, :3] = r_original_rot
+        raw_pose_r[:3, 3] = raw_pos_r
+        aligned_pose_r = self.vr_to_global_mat @ raw_pose_r
+        aligned_pos_r = aligned_pose_r[:3, 3]
+        r_aligned_matrix = aligned_pose_r[:3, :3]
+
         # right-side control: keyTwo switches between arm and waist control
         if r_sig["keyTwo"] == "true":
             # waist control
-            ret["r"]["position"] = np.array([r_sig["position"]["z"], -r_sig["position"]["x"], r_sig["position"]["y"]])
-            r_original_quat = np.array(
-                [
-                    r_sig["rotation"]["x"],
-                    r_sig["rotation"]["y"],
-                    r_sig["rotation"]["z"],
-                    r_sig["rotation"]["w"],
-                ]
-            )
-            r_original_rot = R.from_quat(r_original_quat)
-            r_original_matrix = r_original_rot.as_matrix()
+            ret["r"]["position"] = np.array([aligned_pos_r[2], -aligned_pos_r[0], aligned_pos_r[1]])
             r_transform_matrix = np.array([[0, 0, -1], [1, 0, 0], [0, -1, 0]])
-            r_transform_inv = r_transform_matrix.T
-            r_new_matrix = r_transform_matrix @ r_original_matrix @ r_transform_inv
+            r_new_matrix = r_transform_matrix @ r_aligned_matrix @ r_transform_matrix.T
             r_new_rot = R.from_matrix(r_new_matrix)
             ret["r"]["quaternion"] = r_new_rot.as_quat()
 
             euler = r_new_rot.as_euler("xyz", degrees=False)  # [roll, pitch, yaw]
             euler = euler * 0.5
-            eps = np.deg2rad(10.0)  # 0.3 deg ≈ 0.0052 rad
-            step = np.deg2rad(5.0)  # 5 deg per step
+            eps = np.deg2rad(10.0)
+            step = np.deg2rad(5.0)
             roll = 0.0 if abs(euler[0]) < eps else np.round(euler[0] / step) * step
             pitch = 0.0 if abs(euler[1]) < eps else euler[1]
             yaw = 0.0 if abs(euler[2]) < eps else euler[2]
@@ -148,22 +171,10 @@ class PicoDevice(TeleopDevice):
 
             ret["r"]["position"] = ret["r"]["position"] * 0.5
         else:
-            ret["r"]["position"] = np.array([r_sig["position"]["z"], -r_sig["position"]["x"], r_sig["position"]["y"]])
-            r_original_quat = np.array(
-                [
-                    r_sig["rotation"]["x"],
-                    r_sig["rotation"]["y"],
-                    r_sig["rotation"]["z"],
-                    r_sig["rotation"]["w"],
-                ]
-            )
-            r_original_rot = R.from_quat(r_original_quat)
-            r_original_matrix = r_original_rot.as_matrix()
+            ret["r"]["position"] = np.array([aligned_pos_r[2], -aligned_pos_r[0], aligned_pos_r[1]])
             r_transform_matrix = np.array([[0, 0, 1], [-1, 0, 0], [0, 1, 0]])
-            r_transform_inv = r_transform_matrix.T
-            r_new_matrix = r_transform_matrix @ r_original_matrix @ r_transform_inv
-            r_new_rot = R.from_matrix(r_new_matrix)
-            ret["r"]["quaternion"] = r_new_rot.as_quat()
+            r_new_matrix = r_transform_matrix @ r_aligned_matrix @ r_transform_matrix.T
+            ret["r"]["quaternion"] = R.from_matrix(r_new_matrix).as_quat()
 
         ret["r"]["axisX"] = r_sig["axisX"]
         ret["r"]["axisY"] = r_sig["axisY"]
